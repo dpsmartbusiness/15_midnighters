@@ -4,42 +4,46 @@ from datetime import datetime
 
 
 def load_attempts():
-    page = 1
+    page_num = 1
     url = 'https://devman.org/api/challenges/solution_attempts/'
-    user_info = requests.get(url, params={'page': page}).json()
     while True:
-        for record in user_info['records']:
+        page = requests.get(url, params={'page': page_num}).json()
+        attempts = page['records']
+        for attempt in attempts:
             yield {
-                'username': record['username'],
-                'timestamp': record['timestamp'],
-                'timezone': record['timezone'],
+                'username': attempt['username'],
+                'timestamp': attempt['timestamp'],
+                'timezone': attempt['timezone'],
             }
-        if page == user_info['number_of_pages']:
+        if page_num == page['number_of_pages']:
             break
-        page += 1
+        page_num += 1
 
 
-def get_user_time(user):
-    user_timezone = pytz.timezone(user['timezone'])
-    user_time = datetime.fromtimestamp(user['timestamp'], user_timezone)
-    return user_time
+def get_attempt_time(attempt):
+    attempt_timezone = pytz.timezone(attempt['timezone'])
+    attempt_time = datetime.fromtimestamp(
+        attempt['timestamp'],
+        attempt_timezone
+    )
+    return attempt_time
 
 
-def get_midnighters(users):
+def get_midnighters(attempts_generator):
     midnight = 0
     sunrise = 7
     midnighters = set()
-    for user in users:
-        user_time = get_user_time(user)
-        if midnight <= user_time.hour <= sunrise:
-            midnighters.add(user['username'])
+    for attempt in attempts_generator:
+        attempt_time = get_attempt_time(attempt)
+        if midnight <= attempt_time.hour <= sunrise:
+            midnighters.add(attempt['username'])
     return midnighters
 
 
 def show_midnighters(midnighters):
     print('Devman midnighters:')
-    for number, midnither in list(enumerate(midnighters, start=1)):
-        print('#{}. {}'.format(number, midnither))
+    for number, midnighter in list(enumerate(midnighters, start=1)):
+        print('#{}. {}'.format(number, midnighter))
 
 
 if __name__ == '__main__':
